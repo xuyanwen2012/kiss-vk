@@ -12,36 +12,10 @@ int main(int argc, char** argv) {
   const vulkan::Engine engine;
   auto mr = engine.get_mr();
 
-  UsmVector<uint32_t> input_a(1024, mr);
-  UsmVector<uint32_t> input_b(1024, mr);
-  UsmVector<uint32_t> output(1024, mr);
-
-  // #version 460
-
-  // layout(local_size_x = 256) in;
-
-  // layout(push_constant) uniform Params { uint n; }
-  // params;
-
-  // layout(std430, set = 0, binding = 0) readonly buffer InputA {
-  //   float u_input_a[];
-  // };
-
-  // layout(std430, set = 0, binding = 1) readonly buffer InputB {
-  //   float u_input_b[];
-  // };
-
-  // layout(std430, set = 0, binding = 2) writeonly buffer Output {
-  //   float u_output[];
-  // };
-
-  // void main() {
-  //   uint global_idx = gl_GlobalInvocationID.x;
-
-  //   if (global_idx < params.n) {
-  //     u_output[global_idx] = u_input_a[global_idx] + u_input_b[global_idx];
-  //   }
-  // }
+  constexpr auto n = 1024;
+  UsmVector<uint32_t> input_a(n, mr);
+  UsmVector<uint32_t> input_b(n, mr);
+  UsmVector<uint32_t> output(n, mr);
 
   struct Ps {
     uint32_t n;
