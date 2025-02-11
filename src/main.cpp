@@ -8,6 +8,7 @@ int main(int argc, char **argv) {
 
   vulkan::BaseEngine engine;
   vulkan::VulkanMemoryResource mr(engine.get_device());
+  vulkan::Algorithm algorithm(&mr, "algorithm.comp");
 
   return 0;
 }
