@@ -73,7 +73,7 @@ class Algorithm final : public std::enable_shared_from_this<Algorithm> {
   // void update_buffer(std::initializer_list<vk::DescriptorBufferInfo> buffer_infos);
 
   void update_descriptor_set(uint32_t set_index,
-                             const std::vector<vk::DescriptorBufferInfo>& buffer_infos);
+                             const std::vector<vk::DescriptorBufferInfo>& buffer_infos) const;
 
   // Used by 'Sequence' Class
   // void record_bind_core(const vk::CommandBuffer& cmd_buf) const;

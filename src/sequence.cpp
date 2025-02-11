@@ -61,6 +61,27 @@ void Sequence::cmd_end() const {
   handle_.end();
 }
 
+void Sequence::insert_compute_memory_barrier() const {
+  // For compute passes that read->write a buffer, we often do:
+  //   srcAccess = SHADER_WRITE
+  //   dstAccess = SHADER_READ
+  //   pipeline stages = COMPUTE -> COMPUTE
+
+  vk::MemoryBarrier memory_barrier{.srcAccessMask = vk::AccessFlagBits::eShaderWrite,
+                                   .dstAccessMask = vk::AccessFlagBits::eShaderRead};
+
+  handle_.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,  // source stage
+                          vk::PipelineStageFlagBits::eComputeShader,  // destination stage
+                          vk::DependencyFlags{},                      // flags
+                          1,
+                          &memory_barrier,  // memory barrier(s)
+                          0,
+                          nullptr,  // buffer barriers
+                          0,
+                          nullptr  // image barriers
+  );
+}
+
 void Sequence::launch_kernel_async() const {
   spdlog::trace("Sequence::launch_kernel_async()");
 
