@@ -12,6 +12,8 @@ class Algorithm final : public std::enable_shared_from_this<Algorithm> {
   ~Algorithm();
 
   // Usage:
+
+  [[nodiscard]] std::shared_ptr<Algorithm> num_buffers(size_t n);
   [[nodiscard]] std::shared_ptr<Algorithm> build();
 
  private:
@@ -42,6 +44,8 @@ class Algorithm final : public std::enable_shared_from_this<Algorithm> {
 
   struct {
     std::vector<uint32_t> spirv_binary_;
+    size_t num_buffers_ = 0;
+    
 
     // uint32_t reflected_workgroup_size_[3] = {0, 0, 0};
     // uint32_t reflected_push_constant_reported_size_ = 0;

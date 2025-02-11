@@ -8,7 +8,7 @@ int main(int argc, char** argv) {
   vulkan::Engine engine;
   auto mr = engine.get_mr();
 
-  // auto algo = engine.make_algo("cifar_conv2d")->build();
+  auto algo = engine.make_algo("cifar_conv2d")->num_buffers(3)->build();
 
   spdlog::info("done!");
   return 0;
