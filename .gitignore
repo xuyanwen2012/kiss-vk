@@ -1,0 +1,22 @@
+# Project specific
+# ppl/vulkan/shaders/compiled_shaders/*.spv
+
+# resources/resources.zip
+*.zip
+
+# Xmake cache
+.xmake/
+build/
+
+# MacOS Cache
+.DS_Store
+
+.vscode/
+.cache/
+vsxmake2022/
+compile_commands.json
+.clangd/
+
+*.nsys-rep
+
+__pycache__/
