@@ -31,11 +31,12 @@ struct VulkanAllocationRecord {
 class VulkanMemoryResource : public std::pmr::memory_resource {
  public:
   // We use the requested defaults for usage flags and allocation flags.
-  explicit VulkanMemoryResource(vk::Device device,
-                                vk::BufferUsageFlags buffer_usage = vk::BufferUsageFlagBits::eStorageBuffer,
-                                VmaMemoryUsage memory_usage = VMA_MEMORY_USAGE_AUTO,
-                                VmaAllocationCreateFlags flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT |
-                                                                 VMA_ALLOCATION_CREATE_MAPPED_BIT);
+  explicit VulkanMemoryResource(
+      vk::Device device,
+      vk::BufferUsageFlags buffer_usage = vk::BufferUsageFlagBits::eStorageBuffer,
+      VmaMemoryUsage memory_usage = VMA_MEMORY_USAGE_AUTO,
+      VmaAllocationCreateFlags flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT |
+                                       VMA_ALLOCATION_CREATE_MAPPED_BIT);
 
   ~VulkanMemoryResource() override;
 

@@ -127,8 +127,9 @@ void BaseEngine::create_physical_device(vk::PhysicalDeviceType type) {
   }
 
   // Try to find an integrated GPU
-  const auto integrated_gpu = std::ranges::find_if(
-      physicalDevices, [type](const auto &device) { return device.getProperties().deviceType == type; });
+  const auto integrated_gpu = std::ranges::find_if(physicalDevices, [type](const auto &device) {
+    return device.getProperties().deviceType == type;
+  });
 
   if (integrated_gpu == physicalDevices.end()) {
     throw std::runtime_error("No integrated GPU found");
@@ -194,9 +195,9 @@ void BaseEngine::create_device(vk::QueueFlags queue_flags) {
 
   compute_queue_family_index_ = std::distance(
       queueFamilyProperties.begin(),
-      std::find_if(queueFamilyProperties.begin(), queueFamilyProperties.end(), [queue_flags](const auto &qfp) {
-        return qfp.queueFlags & queue_flags;
-      }));
+      std::find_if(queueFamilyProperties.begin(),
+                   queueFamilyProperties.end(),
+                   [queue_flags](const auto &qfp) { return qfp.queueFlags & queue_flags; }));
 
   if (compute_queue_family_index_ == queueFamilyProperties.size()) {
     throw std::runtime_error("No queue family supports compute operations.");
@@ -242,18 +243,19 @@ void BaseEngine::initialize_vma_allocator() const {
       .vkGetDeviceProcAddr = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetDeviceProcAddr,
   };
 
-  const VmaAllocatorCreateInfo vma_allocator_create_info{.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
-                                                         .physicalDevice = physical_device_,
-                                                         .device = device_,
-                                                         .preferredLargeHeapBlockSize = 0,  // Let VMA use default size
-                                                         .pAllocationCallbacks = nullptr,
-                                                         .pDeviceMemoryCallbacks = nullptr,
-                                                         .pHeapSizeLimit = nullptr,
-                                                         .pVulkanFunctions = &vulkan_functions,
-                                                         // .pVulkanFunctions = nullptr,
-                                                         .instance = instance_,
-                                                         .vulkanApiVersion = VK_API_VERSION_1_3,
-                                                         .pTypeExternalMemoryHandleTypes = nullptr};
+  const VmaAllocatorCreateInfo vma_allocator_create_info{
+      .flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
+      .physicalDevice = physical_device_,
+      .device = device_,
+      .preferredLargeHeapBlockSize = 0,  // Let VMA use default size
+      .pAllocationCallbacks = nullptr,
+      .pDeviceMemoryCallbacks = nullptr,
+      .pHeapSizeLimit = nullptr,
+      .pVulkanFunctions = &vulkan_functions,
+      // .pVulkanFunctions = nullptr,
+      .instance = instance_,
+      .vulkanApiVersion = VK_API_VERSION_1_3,
+      .pTypeExternalMemoryHandleTypes = nullptr};
 
   if (vmaCreateAllocator(&vma_allocator_create_info, &g_vma_allocator) != VK_SUCCESS) {
     throw std::runtime_error("Failed to create VMA allocator");

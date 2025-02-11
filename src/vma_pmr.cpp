@@ -13,7 +13,10 @@ VulkanMemoryResource::VulkanMemoryResource(const vk::Device device,
                                            const vk::BufferUsageFlags buffer_usage,
                                            const VmaMemoryUsage memory_usage,
                                            const VmaAllocationCreateFlags flags)
-    : device_(device), bufferUsage_(buffer_usage), memoryUsage_(memory_usage), allocationFlags_(flags) {
+    : device_(device),
+      bufferUsage_(buffer_usage),
+      memoryUsage_(memory_usage),
+      allocationFlags_(flags) {
   spdlog::debug(
       "VulkanMemoryResource created with usageFlags = {}, "
       "memoryUsage = {}, allocFlags = {}",

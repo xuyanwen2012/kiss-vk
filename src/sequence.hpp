@@ -6,7 +6,9 @@ namespace vulkan {
 
 class Sequence {
  public:
-  explicit Sequence(vk::Device device_ref, vk::Queue compute_queue_ref, uint32_t compute_queue_index);
+  explicit Sequence(vk::Device device_ref,
+                    vk::Queue compute_queue_ref,
+                    uint32_t compute_queue_index);
 
   ~Sequence() = default;
 
@@ -16,6 +18,8 @@ class Sequence {
   void record_commands(const Algorithm* algo, std::array<uint32_t, 3> grid_size) const;
   void launch_kernel_async() const;
   void sync() const;
+
+  [[nodiscard]] vk::CommandBuffer get_handle() const { return handle_; }
 
  protected:
   void destroy();

@@ -2,8 +2,12 @@
 
 namespace vulkan {
 
-Sequence::Sequence(const vk::Device device_ref, const vk::Queue compute_queue_ref, const uint32_t compute_queue_index)
-    : device_ref_(device_ref), compute_queue_ref_(compute_queue_ref), compute_queue_index_(compute_queue_index) {
+Sequence::Sequence(const vk::Device device_ref,
+                   const vk::Queue compute_queue_ref,
+                   const uint32_t compute_queue_index)
+    : device_ref_(device_ref),
+      compute_queue_ref_(compute_queue_ref),
+      compute_queue_index_(compute_queue_index) {
   spdlog::trace("Sequence constructor");
 
   create_sync_objects();
@@ -80,7 +84,8 @@ void Sequence::sync() const {
   }
 }
 
-void Sequence::record_commands(const Algorithm* algo, const std::array<uint32_t, 3> grid_size) const {
+void Sequence::record_commands(const Algorithm* algo,
+                               const std::array<uint32_t, 3> grid_size) const {
   spdlog::trace("Sequence::record_commands()");
 
   cmd_begin();

@@ -9,7 +9,9 @@ Algorithm::Algorithm(VulkanMemoryResource* mr_ptr, std::string shader_name)
   create_shader_module();
 }
 
-std::shared_ptr<Algorithm> Algorithm::work_group_size(const uint32_t x, const uint32_t y, const uint32_t z) {
+std::shared_ptr<Algorithm> Algorithm::work_group_size(const uint32_t x,
+                                                      const uint32_t y,
+                                                      const uint32_t z) {
   internal_.work_group_size[0] = x;
   internal_.work_group_size[1] = y;
   internal_.work_group_size[2] = z;
@@ -69,8 +71,10 @@ void Algorithm::update_buffer(const std::initializer_list<vk::DescriptorBufferIn
     });
   }
 
-  device_ref_.updateDescriptorSets(
-      static_cast<uint32_t>(compute_write_descriptor_sets.size()), compute_write_descriptor_sets.data(), 0, nullptr);
+  device_ref_.updateDescriptorSets(static_cast<uint32_t>(compute_write_descriptor_sets.size()),
+                                   compute_write_descriptor_sets.data(),
+                                   0,
+                                   nullptr);
 }
 
 std::shared_ptr<Algorithm> Algorithm::build() {
@@ -86,7 +90,8 @@ void Algorithm::record_bind_core(const vk::CommandBuffer& cmd_buf) const {
   spdlog::trace("Algorithm::record_bind_core()");
 
   cmd_buf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline_);
-  cmd_buf.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipeline_layout_, 0, descriptor_set_, nullptr);
+  cmd_buf.bindDescriptorSets(
+      vk::PipelineBindPoint::eCompute, pipeline_layout_, 0, descriptor_set_, nullptr);
 }
 
 void Algorithm::record_bind_push(const vk::CommandBuffer& cmd_buf) const {
@@ -105,7 +110,8 @@ void Algorithm::record_bind_push(const vk::CommandBuffer& cmd_buf) const {
                         push_constants_buffer_.data());
 }
 
-void Algorithm::record_dispatch(const vk::CommandBuffer& cmd_buf, const std::array<uint32_t, 3> grid_size) const {
+void Algorithm::record_dispatch(const vk::CommandBuffer& cmd_buf,
+                                const std::array<uint32_t, 3> grid_size) const {
   spdlog::trace("Algorithm::record_dispatch()");
 
   spdlog::debug("Dispatching ({}, {}, {}) blocks of size ({}, {}, {})",
@@ -236,7 +242,8 @@ void Algorithm::create_pipeline() {
     throw std::runtime_error("Number of buffers is 0");
   }
 
-  if (internal_.work_group_size[0] == 0 || internal_.work_group_size[1] == 0 || internal_.work_group_size[2] == 0) {
+  if (internal_.work_group_size[0] == 0 || internal_.work_group_size[1] == 0 ||
+      internal_.work_group_size[2] == 0) {
     throw std::runtime_error("Work group size is not set");
   }
 
