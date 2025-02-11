@@ -12,7 +12,7 @@
 // Global variables
 // ----------------------------------------------------------------------------
 
-static VmaAllocator g_vma_allocator = nullptr;
+VmaAllocator g_vma_allocator = nullptr;
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
@@ -78,8 +78,8 @@ void BaseEngine::create_instance() {
 
   const vk::InstanceCreateInfo instanceCreateInfo{
       .pApplicationInfo = &appInfo,
-      .enabledLayerCount = static_cast<uint32_t>(enabledLayers_.size()),
-      .ppEnabledLayerNames = enabledLayers_.data(),
+      .enabledLayerCount = static_cast<uint32_t>(enabled_layers_.size()),
+      .ppEnabledLayerNames = enabled_layers_.data(),
   };
 
   // Create the instance using the default dispatcher
@@ -108,7 +108,7 @@ void BaseEngine::request_validation_layer() {
     return;
   }
 
-  enabledLayers_.push_back(validationLayerName);
+  enabled_layers_.push_back(validationLayerName);
 }
 
 // ----------------------------------------------------------------------------

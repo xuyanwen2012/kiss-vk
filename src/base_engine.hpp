@@ -10,6 +10,10 @@ class BaseEngine {
 
   ~BaseEngine();
 
+  [[nodiscard]] vk::Device &get_device() { return device_; }
+  [[nodiscard]] vk::Queue &get_compute_queue() { return compute_queue_; }
+  [[nodiscard]] uint32_t get_compute_queue_family_index() const { return compute_queue_family_index_; }
+
  protected:
   void initialize_dynamic_loader();
   void request_validation_layer();
@@ -28,7 +32,7 @@ class BaseEngine {
 
  private:
   uint32_t compute_queue_family_index_;
-  std::vector<const char *> enabledLayers_;
+  std::vector<const char *> enabled_layers_;
 
   vk::DynamicLoader dl_;
   vk::DispatchLoaderDynamic dldi_;
