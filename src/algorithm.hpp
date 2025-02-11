@@ -12,7 +12,7 @@ class Algorithm final : public std::enable_shared_from_this<Algorithm> {
   ~Algorithm();
 
  private:
-  void load_compiled_shader();
+  // void load_compiled_shader();
 
   void create_shader_module();
   void create_descriptor_set_layout();
