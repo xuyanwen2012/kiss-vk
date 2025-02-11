@@ -5,7 +5,7 @@
 template <typename T>
 using UsmVector = std::pmr::vector<T>;
 
-void run_hello_vector_add(vulkan::Engine& engine, vulkan::Sequence* seq) {
+static void run_hello_vector_add(const vulkan::Engine& engine, const vulkan::Sequence* seq) {
   constexpr auto n = 1024;
   UsmVector<float> input_a(n, engine.get_mr());
   UsmVector<float> input_b(n, engine.get_mr());
@@ -52,7 +52,7 @@ void run_hello_vector_add(vulkan::Engine& engine, vulkan::Sequence* seq) {
   }
 }
 
-void run_multiple_steps(vulkan::Engine& engine, vulkan::Sequence* seq) {
+static void run_multiple_steps(const vulkan::Engine& engine, const vulkan::Sequence* seq) {
   constexpr auto n = 1024;
   UsmVector<float> buf_a(n, engine.get_mr());
   UsmVector<float> buf_b(n, engine.get_mr());
