@@ -58,6 +58,13 @@ class Algorithm final : public std::enable_shared_from_this<Algorithm> {
    */
   void update_buffer(std::initializer_list<vk::DescriptorBufferInfo> buffer_infos);
 
+  // Used by 'Sequence' Class
+  void record_bind_core(const vk::CommandBuffer& cmd_buf) const;
+  void record_bind_push(const vk::CommandBuffer& cmd_buf) const;
+
+  // basically CUDA's <<< grid_size >>>
+  void record_dispatch(const vk::CommandBuffer& cmd_buf, std::array<uint32_t, 3> grid_size) const;
+
   [[nodiscard]] bool has_push_constants() const { return internal_.push_constant_size > 0; }
 
  private:
@@ -67,7 +74,6 @@ class Algorithm final : public std::enable_shared_from_this<Algorithm> {
   void create_descriptor_set_layout();
   void create_descriptor_pool();
   void allocate_descriptor_sets();
-  // void allocate_push_constants();
 
   void create_pipeline();
 

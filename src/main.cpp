@@ -1,15 +1,14 @@
 #include <spdlog/spdlog.h>
 
-#include "algorithm.hpp"
 #include "engine.hpp"
 
 template <typename T>
 using UsmVector = std::pmr::vector<T>;
 
-int main(int argc, char** argv) {
+int main() {
   spdlog::set_level(spdlog::level::trace);
 
-  const vulkan::Engine engine;
+  vulkan::Engine engine;
   auto mr = engine.get_mr();
 
   constexpr auto n = 1024;
@@ -19,7 +18,7 @@ int main(int argc, char** argv) {
 
   struct Ps {
     uint32_t n;
-  } ps;
+  };
 
   auto algo =
       engine.make_algo("hello_vector_add")->work_group_size(256, 1, 1)->num_buffers(3)->push_constant<Ps>()->build();
@@ -33,6 +32,11 @@ int main(int argc, char** argv) {
       engine.get_buffer_info(input_b),
       engine.get_buffer_info(output),
   });
+
+  auto seq = engine.make_seq();
+  seq->record_commands(algo.get(), {n / 256, 1, 1});
+  seq->launch_kernel_async();
+  seq->sync();
 
   spdlog::info("done!");
   return 0;

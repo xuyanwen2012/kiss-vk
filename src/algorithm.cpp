@@ -78,6 +78,47 @@ std::shared_ptr<Algorithm> Algorithm::build() {
   return shared_from_this();
 }
 
+// ----------------------------------------------------------------------------
+// record_bind_core / record_bind_push
+// ----------------------------------------------------------------------------
+
+void Algorithm::record_bind_core(const vk::CommandBuffer& cmd_buf) const {
+  spdlog::trace("Algorithm::record_bind_core()");
+
+  cmd_buf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline_);
+  cmd_buf.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipeline_layout_, 0, descriptor_set_, nullptr);
+}
+
+void Algorithm::record_bind_push(const vk::CommandBuffer& cmd_buf) const {
+  spdlog::trace("Algorithm::record_bind_push()");
+
+  spdlog::debug("Pushing constants of size {}", internal_.push_constant_size);
+
+  if (!has_push_constants()) {
+    throw std::runtime_error("Push constants not allocated");
+  }
+
+  cmd_buf.pushConstants(pipeline_layout_,
+                        vk::ShaderStageFlagBits::eCompute,
+                        0,
+                        internal_.push_constant_size,
+                        push_constants_buffer_.data());
+}
+
+void Algorithm::record_dispatch(const vk::CommandBuffer& cmd_buf, std::array<uint32_t, 3> grid_size) const {
+  spdlog::trace("Algorithm::record_dispatch()");
+
+  spdlog::debug("Dispatching ({}, {}, {}) blocks of size ({}, {}, {})",
+                grid_size[0],
+                grid_size[1],
+                grid_size[2],
+                internal_.work_group_size[0],
+                internal_.work_group_size[1],
+                internal_.work_group_size[2]);
+
+  cmd_buf.dispatch(grid_size[0], grid_size[1], grid_size[2]);
+}
+
 // -------------------------------------------------------------------------------------------------
 // Shader Related
 //   load_compiled_shader();
@@ -204,6 +245,14 @@ void Algorithm::create_pipeline() {
 
   if (descriptor_set_layout_ == nullptr) {
     throw std::runtime_error("Descriptor set layout is not initialized");
+  }
+
+  if (internal_.num_buffers == 0) {
+    throw std::runtime_error("Number of buffers is 0");
+  }
+
+  if (internal_.work_group_size[0] == 0 || internal_.work_group_size[1] == 0 || internal_.work_group_size[2] == 0) {
+    throw std::runtime_error("Work group size is not set");
   }
 
   assert(internal_.push_constant_size <= push_constants_buffer_.size());
