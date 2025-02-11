@@ -10,6 +10,9 @@ class Algorithm final : public std::enable_shared_from_this<Algorithm> {
   explicit Algorithm(VulkanMemoryResource* mr_ptr, const std::string_view shader_name);
 
   ~Algorithm();
+  
+  // Usage: 
+  [[nodiscard]] std::shared_ptr<Algorithm> build();
 
  private:
   void load_compiled_shader(const std::string& shader_name);

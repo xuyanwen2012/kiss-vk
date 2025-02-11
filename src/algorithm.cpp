@@ -11,12 +11,14 @@ Algorithm::Algorithm(VulkanMemoryResource* mr_ptr, const std::string_view shader
 
 Algorithm::~Algorithm() {}
 
+std::shared_ptr<Algorithm> Algorithm::build() { return shared_from_this(); }
+
 // -------------------------------------------------------------------------------------------------
 //
 // -------------------------------------------------------------------------------------------------
 
 void Algorithm::load_compiled_shader(const std::string& shader_name) {
-  // auto shader_pair = shaders::all_shaders.at(shader_name);
+  std::pair<const unsigned char*, size_t> shader_pair = shaders::all_shaders.at(shader_name);
 }
 
 }  // namespace vulkan
