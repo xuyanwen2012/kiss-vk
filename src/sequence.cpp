@@ -84,20 +84,20 @@ void Sequence::sync() const {
   }
 }
 
-void Sequence::record_commands(const Algorithm* algo,
-                               const std::array<uint32_t, 3> grid_size) const {
-  spdlog::trace("Sequence::record_commands()");
+// void Sequence::record_commands(const Algorithm* algo,
+//                                const std::array<uint32_t, 3> grid_size) const {
+//   spdlog::trace("Sequence::record_commands()");
 
-  cmd_begin();
+//   cmd_begin();
 
-  algo->record_bind_core(handle_);
-  if (algo->has_push_constants()) {
-    algo->record_bind_push(handle_);
-  }
+//   algo->record_bind_core(handle_);
+//   if (algo->has_push_constants()) {
+//     algo->record_bind_push(handle_);
+//   }
 
-  algo->record_dispatch(handle_, grid_size);
+//   algo->record_dispatch(handle_, grid_size);
 
-  cmd_end();
-}
+//   cmd_end();
+// }
 
 }  // namespace vulkan

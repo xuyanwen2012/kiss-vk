@@ -21,6 +21,7 @@ void run_hello_vector_add(vulkan::Engine& engine, vulkan::Sequence* seq) {
 
   auto algo = engine.make_algo("hello_vector_add")
                   ->work_group_size(256, 1, 1)
+                  ->num_sets(1)
                   ->num_buffers(3)
                   ->push_constant<Ps>()
                   ->build();
@@ -29,13 +30,19 @@ void run_hello_vector_add(vulkan::Engine& engine, vulkan::Sequence* seq) {
       .n = n,
   });
 
-  algo->update_buffer({
-      engine.get_buffer_info(input_a),
-      engine.get_buffer_info(input_b),
-      engine.get_buffer_info(output),
-  });
+  algo->update_descriptor_set(0,
+                              {
+                                  engine.get_buffer_info(input_a),
+                                  engine.get_buffer_info(input_b),
+                                  engine.get_buffer_info(output),
+                              });
 
-  seq->record_commands(algo.get(), {vulkan::div_ceil(n, 256), 1, 1});
+  seq->cmd_begin();
+  algo->record_bind_core(seq->get_handle(), 0);
+  algo->record_bind_push(seq->get_handle());
+  algo->record_dispatch(seq->get_handle(), {vulkan::div_ceil(n, 256), 1, 1});
+  seq->cmd_end();
+
   seq->launch_kernel_async();
   seq->sync();
 
@@ -52,57 +59,72 @@ void run_multiple_steps(vulkan::Engine& engine, vulkan::Sequence* seq) {
   UsmVector<float> buf_c(n, engine.get_mr());
   UsmVector<float> buf_d(n, engine.get_mr());
   UsmVector<float> buf_e(n, engine.get_mr());
+  UsmVector<float> buf_f(n, engine.get_mr());
 
   std::ranges::fill(buf_a, 1.0f);
-  std::ranges::fill(buf_b, 10.0f);
+  std::ranges::fill(buf_c, 2.0f);
+  std::ranges::fill(buf_e, 3.0f);
 
   struct Ps {
     uint32_t n;
   };
 
-  auto algo_a = engine.make_algo("hello_vector_add")
-                    ->work_group_size(256, 1, 1)
-                    ->num_buffers(3)
-                    ->push_constant<Ps>()
-                    ->build();
+  auto algo = engine.make_algo("hello_multiple_steps")
+                  ->work_group_size(256, 1, 1)
+                  ->num_sets(3)  // we want 3 descriptor sets
+                  ->num_buffers(2)
+                  ->push_constant<Ps>()
+                  ->build();
 
-  algo_a->update_push_constant(Ps{
+  algo->update_push_constant(Ps{
       .n = n,
   });
 
-  algo_a->update_buffer({
-      engine.get_buffer_info(buf_a),
-      engine.get_buffer_info(buf_b),
-      engine.get_buffer_info(buf_c),
-  });
+  algo->update_descriptor_set(0,
+                              {
+                                  engine.get_buffer_info(buf_a),
+                                  engine.get_buffer_info(buf_b),
+                              });
+  algo->update_descriptor_set(1,
+                              {
+                                  engine.get_buffer_info(buf_c),
+                                  engine.get_buffer_info(buf_d),
+                              });
+  algo->update_descriptor_set(2,
+                              {
+                                  engine.get_buffer_info(buf_e),
+                                  engine.get_buffer_info(buf_f),
+                              });
+  seq->cmd_begin();
 
-  seq->record_commands(algo_a.get(), {vulkan::div_ceil(n, 256), 1, 1});
-  seq->launch_kernel_async();
-  seq->sync();
+  // Dispatch #0 with set 0
+  algo->record_bind_core(seq->get_handle(), 0);
+  algo->record_bind_push(seq->get_handle());
+  algo->record_dispatch(seq->get_handle(), {4, 1, 1});  // whatever your grid is
 
-  algo_a->update_buffer({
-      engine.get_buffer_info(buf_b),
-      engine.get_buffer_info(buf_c),
-      engine.get_buffer_info(buf_d),
-  });
+  // Dispatch #1 with set 1
+  algo->record_bind_core(seq->get_handle(), 1);
+  algo->record_bind_push(seq->get_handle());
+  algo->record_dispatch(seq->get_handle(), {4, 1, 1});
 
-  seq->record_commands(algo_a.get(), {vulkan::div_ceil(n, 256), 1, 1});
-  seq->launch_kernel_async();
-  seq->sync();
+  // Dispatch #2 with set 2
+  algo->record_bind_core(seq->get_handle(), 2);
+  algo->record_bind_push(seq->get_handle());
+  algo->record_dispatch(seq->get_handle(), {4, 1, 1});
 
-  algo_a->update_buffer({
-      engine.get_buffer_info(buf_c),
-      engine.get_buffer_info(buf_d),
-      engine.get_buffer_info(buf_e),
-  });
+  seq->cmd_end();
 
-  seq->record_commands(algo_a.get(), {vulkan::div_ceil(n, 256), 1, 1});
   seq->launch_kernel_async();
   seq->sync();
 
   // print 10 output elements
   for (auto i = 0; i < 10; i++) {
+    spdlog::info("buf_a[{}] = {}", i, buf_a[i]);
+    spdlog::info("buf_b[{}] = {}", i, buf_b[i]);
+    spdlog::info("buf_c[{}] = {}", i, buf_c[i]);
+    spdlog::info("buf_d[{}] = {}", i, buf_d[i]);
     spdlog::info("buf_e[{}] = {}", i, buf_e[i]);
+    spdlog::info("buf_f[{}] = {}", i, buf_f[i]);
   }
 }
 

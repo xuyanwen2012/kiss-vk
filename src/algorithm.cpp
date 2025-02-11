@@ -26,6 +26,15 @@ std::shared_ptr<Algorithm> Algorithm::num_buffers(const size_t n) {
   return shared_from_this();
 }
 
+std::shared_ptr<Algorithm> Algorithm::num_sets(const size_t count) {
+  if (count == 0) {
+    throw std::runtime_error("Number of sets cannot be 0");
+  }
+
+  descriptor_set_count_ = count;
+  return shared_from_this();
+}
+
 std::shared_ptr<Algorithm> Algorithm::push_constant_size(const size_t size_in_bytes) {
   internal_.push_constant_size = size_in_bytes;
   return shared_from_this();
@@ -43,38 +52,74 @@ void Algorithm::update_push_constant(const void* data_ptr, const size_t size_in_
   std::memcpy(push_constants_buffer_.data(), data_ptr, size_in_bytes);
 }
 
-void Algorithm::update_buffer(const std::initializer_list<vk::DescriptorBufferInfo> buffer_infos) {
-  spdlog::trace("Algorithm::update_buffer()");
+// void Algorithm::update_buffer(const std::initializer_list<vk::DescriptorBufferInfo> buffer_infos)
+// {
+//   spdlog::trace("Algorithm::update_buffer()");
 
+//   if (buffer_infos.size() != internal_.num_buffers) {
+//     throw std::runtime_error("Buffer info size mismatch");
+//   }
+
+//   // need to have descriptor set before updating buffer
+//   if (descriptor_set_ == nullptr) {
+//     throw std::runtime_error("Descriptor set is not initialized");
+//   }
+
+//   buffer_infos_ = buffer_infos;
+
+//   std::vector<vk::WriteDescriptorSet> compute_write_descriptor_sets;
+//   compute_write_descriptor_sets.reserve(buffer_infos.size());
+
+//   for (uint32_t i = 0; i < buffer_infos.size(); ++i) {
+//     compute_write_descriptor_sets.emplace_back(vk::WriteDescriptorSet{
+//         .dstSet = descriptor_set_,
+//         .dstBinding = i,
+//         .dstArrayElement = 0,
+//         .descriptorCount = 1,
+//         .descriptorType = vk::DescriptorType::eStorageBuffer,
+//         .pBufferInfo = (buffer_infos.begin() + i),
+//     });
+//   }
+
+//   device_ref_.updateDescriptorSets(static_cast<uint32_t>(compute_write_descriptor_sets.size()),
+//                                    compute_write_descriptor_sets.data(),
+//                                    0,
+//                                    nullptr);
+// }
+
+// ----------------------------------------------------------------------------
+// New multi-set version
+// ----------------------------------------------------------------------------
+
+void Algorithm::update_descriptor_set(uint32_t set_index,
+                                      const std::vector<vk::DescriptorBufferInfo>& buffer_infos) {
+  spdlog::trace("Algorithm::update_descriptor_set() set_index: {}", set_index);
+
+  if (set_index >= descriptor_sets_.size()) {
+    throw std::runtime_error("set_index out of range");
+  }
   if (buffer_infos.size() != internal_.num_buffers) {
-    throw std::runtime_error("Buffer info size mismatch");
+    throw std::runtime_error("Unexpected number of buffers for this layout");
   }
 
-  // need to have descriptor set before updating buffer
-  if (descriptor_set_ == nullptr) {
-    throw std::runtime_error("Descriptor set is not initialized");
+  vk::DescriptorSet dst_set = descriptor_sets_[set_index];
+
+  // Build the writes
+  std::vector<vk::WriteDescriptorSet> writes;
+  writes.reserve(buffer_infos.size());
+  for (uint32_t binding = 0; binding < (uint32_t)buffer_infos.size(); ++binding) {
+    writes.push_back(vk::WriteDescriptorSet{.dstSet = dst_set,
+                                            .dstBinding = binding,
+                                            .dstArrayElement = 0,
+                                            .descriptorCount = 1,
+                                            .descriptorType = vk::DescriptorType::eStorageBuffer,
+                                            .pImageInfo = nullptr,
+                                            .pBufferInfo = &buffer_infos[binding],
+                                            .pTexelBufferView = nullptr});
   }
 
-  buffer_infos_ = buffer_infos;
-
-  std::vector<vk::WriteDescriptorSet> compute_write_descriptor_sets;
-  compute_write_descriptor_sets.reserve(buffer_infos.size());
-
-  for (uint32_t i = 0; i < buffer_infos.size(); ++i) {
-    compute_write_descriptor_sets.emplace_back(vk::WriteDescriptorSet{
-        .dstSet = descriptor_set_,
-        .dstBinding = i,
-        .dstArrayElement = 0,
-        .descriptorCount = 1,
-        .descriptorType = vk::DescriptorType::eStorageBuffer,
-        .pBufferInfo = (buffer_infos.begin() + i),
-    });
-  }
-
-  device_ref_.updateDescriptorSets(static_cast<uint32_t>(compute_write_descriptor_sets.size()),
-                                   compute_write_descriptor_sets.data(),
-                                   0,
-                                   nullptr);
+  // Issue the update
+  device_ref_.updateDescriptorSets(writes, {});
 }
 
 std::shared_ptr<Algorithm> Algorithm::build() {
@@ -86,12 +131,24 @@ std::shared_ptr<Algorithm> Algorithm::build() {
 // record_bind_core / record_bind_push
 // ----------------------------------------------------------------------------
 
-void Algorithm::record_bind_core(const vk::CommandBuffer& cmd_buf) const {
-  spdlog::trace("Algorithm::record_bind_core()");
+// void Algorithm::record_bind_core(const vk::CommandBuffer& cmd_buf) const {
+//   spdlog::trace("Algorithm::record_bind_core()");
 
+//   cmd_buf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline_);
+//   cmd_buf.bindDescriptorSets(
+//       vk::PipelineBindPoint::eCompute, pipeline_layout_, 0, descriptor_set_, nullptr);
+// }
+
+void Algorithm::record_bind_core(const vk::CommandBuffer& cmd_buf, uint32_t set_index) const {
+  if (set_index >= descriptor_sets_.size()) {
+    throw std::runtime_error("Invalid descriptor set index");
+  }
   cmd_buf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline_);
-  cmd_buf.bindDescriptorSets(
-      vk::PipelineBindPoint::eCompute, pipeline_layout_, 0, descriptor_set_, nullptr);
+  cmd_buf.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
+                             pipeline_layout_,
+                             0,  // firstSet
+                             descriptor_sets_[set_index],
+                             {});
 }
 
 void Algorithm::record_bind_push(const vk::CommandBuffer& cmd_buf) const {
@@ -196,11 +253,12 @@ void Algorithm::create_descriptor_set_layout() {
 }
 
 void Algorithm::create_descriptor_pool() {
-  const std::vector pool_sizes{
-      vk::DescriptorPoolSize{
+  const std::vector<vk::DescriptorPoolSize> pool_sizes{
+      {
           .type = vk::DescriptorType::eStorageBuffer,
-          .descriptorCount = static_cast<uint32_t>(internal_.num_buffers),
+          .descriptorCount = static_cast<uint32_t>(internal_.num_buffers * descriptor_set_count_),
       },
+      // ^ we need enough descriptors for each set
   };
 
   const vk::DescriptorPoolCreateInfo create_info{
@@ -217,13 +275,18 @@ void Algorithm::allocate_descriptor_sets() {
     throw std::runtime_error("Descriptor pool or set layout is not initialized");
   }
 
+  std::vector<vk::DescriptorSetLayout> layouts(descriptor_set_count_, descriptor_set_layout_);
+
   const vk::DescriptorSetAllocateInfo allocate_info{
       .descriptorPool = descriptor_pool_,
-      .descriptorSetCount = 1,
-      .pSetLayouts = &descriptor_set_layout_,
+      .descriptorSetCount = descriptor_set_count_,
+      .pSetLayouts = layouts.data(),
   };
 
-  descriptor_set_ = device_ref_.allocateDescriptorSets(allocate_info).front();
+  descriptor_sets_ = device_ref_.allocateDescriptorSets(allocate_info);
+
+  // // old single-set version
+  // descriptor_set_ = device_ref_.allocateDescriptorSets(allocate_info).front();
 }
 
 // ----------------------------------------------------------------------------

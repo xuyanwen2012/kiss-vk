@@ -14,6 +14,7 @@ namespace shaders {
 #include "h/cifar_sparse_conv2d_spv.h"
 #include "h/cifar_sparse_linear_spv.h"
 #include "h/cifar_sparse_maxpool_spv.h"
+#include "h/hello_multiple_steps_spv.h"
 #include "h/hello_vector_add_spv.h"
 #include "h/tmp_add_base_spv.h"
 #include "h/tmp_add_base_v2_16_spv.h"
@@ -56,6 +57,7 @@ static const std::unordered_map<std::string, std::pair<const unsigned char*, siz
     SHADER_ENTRY(cifar_sparse_linear),
     SHADER_ENTRY(cifar_sparse_maxpool),
     SHADER_ENTRY(hello_vector_add),
+    SHADER_ENTRY(hello_multiple_steps),
     SHADER_ENTRY(tmp_add_base),
     SHADER_ENTRY(tmp_add_base_v2_16),
     SHADER_ENTRY(tmp_add_base_v2_32),

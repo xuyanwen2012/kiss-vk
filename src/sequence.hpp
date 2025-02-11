@@ -15,7 +15,7 @@ class Sequence {
   void cmd_begin() const;
   void cmd_end() const;
 
-  void record_commands(const Algorithm* algo, std::array<uint32_t, 3> grid_size) const;
+  // void record_commands(const Algorithm* algo, std::array<uint32_t, 3> grid_size) const;
   void launch_kernel_async() const;
   void sync() const;
 

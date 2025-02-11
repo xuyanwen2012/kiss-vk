@@ -27,6 +27,7 @@ class Algorithm final : public std::enable_shared_from_this<Algorithm> {
   // Builder pattern
   [[nodiscard]] std::shared_ptr<Algorithm> work_group_size(uint32_t x, uint32_t y, uint32_t z);
   [[nodiscard]] std::shared_ptr<Algorithm> num_buffers(size_t n);
+  [[nodiscard]] std::shared_ptr<Algorithm> num_sets(size_t count);
   [[nodiscard]] std::shared_ptr<Algorithm> push_constant_size(size_t size_in_bytes);
   template <typename T>
   [[nodiscard]] std::shared_ptr<Algorithm> push_constant() {
@@ -69,10 +70,16 @@ class Algorithm final : public std::enable_shared_from_this<Algorithm> {
    * });
    * ```
    */
-  void update_buffer(std::initializer_list<vk::DescriptorBufferInfo> buffer_infos);
+  // void update_buffer(std::initializer_list<vk::DescriptorBufferInfo> buffer_infos);
+
+  void update_descriptor_set(uint32_t set_index,
+                             const std::vector<vk::DescriptorBufferInfo>& buffer_infos);
 
   // Used by 'Sequence' Class
-  void record_bind_core(const vk::CommandBuffer& cmd_buf) const;
+  // void record_bind_core(const vk::CommandBuffer& cmd_buf) const;
+
+  void record_bind_core(const vk::CommandBuffer& cmd_buf, uint32_t set_index) const;
+
   void record_bind_push(const vk::CommandBuffer& cmd_buf) const;
 
   // basically CUDA's <<< grid_size >>>
@@ -101,7 +108,12 @@ class Algorithm final : public std::enable_shared_from_this<Algorithm> {
   vk::PipelineLayout pipeline_layout_ = nullptr;
   vk::DescriptorSetLayout descriptor_set_layout_ = nullptr;
   vk::DescriptorPool descriptor_pool_ = nullptr;
-  vk::DescriptorSet descriptor_set_ = nullptr;
+
+  // vk::DescriptorSet descriptor_set_ = nullptr;
+
+  // Instead of a single descriptor_set_, store a vector.
+  std::vector<vk::DescriptorSet> descriptor_sets_;
+  uint32_t descriptor_set_count_ = 1;  // default to 1
 
   std::string shader_name_;
 
