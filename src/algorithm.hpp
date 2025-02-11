@@ -23,6 +23,8 @@ class Algorithm final : public std::enable_shared_from_this<Algorithm> {
 
   [[nodiscard]] std::shared_ptr<Algorithm> build();
 
+  [[nodiscard]] bool has_push_constants() const { return internal_.push_constant_size > 0; }
+
  private:
   void load_compiled_shader();
 

@@ -25,8 +25,6 @@ int main(int argc, char** argv) {
     bool relu;
   };
 
-  spdlog::info("Ps size: {}", sizeof(Ps));
-
   auto algo = engine.make_algo("cifar_conv2d")->num_buffers(4)->push_constant<Ps>()->build();
 
   spdlog::info("done!");

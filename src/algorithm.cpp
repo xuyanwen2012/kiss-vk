@@ -149,6 +149,51 @@ void Algorithm::allocate_push_constants() {
 //   create_pipeline();
 // ----------------------------------------------------------------------------
 
-void Algorithm::create_pipeline() { spdlog::trace("Algorithm::create_pipeline()"); }
+void Algorithm::create_pipeline() {
+  spdlog::trace("Algorithm::create_pipeline()");
+
+  if (descriptor_set_layout_ == nullptr) {
+    throw std::runtime_error("Descriptor set layout is not initialized");
+  }
+
+  // Push Constants
+  std::vector<vk::PushConstantRange> push_constant_ranges;
+
+  if (has_push_constants()) {
+    push_constant_ranges.emplace_back(vk::PushConstantRange{
+        .stageFlags = vk::ShaderStageFlagBits::eCompute,
+        .offset = 0,
+        .size = static_cast<uint32_t>(internal_.push_constant_size),
+    });
+  }
+
+  // Pipeline Layout
+  const vk::PipelineLayoutCreateInfo pipeline_layout_create_info{
+      .setLayoutCount = 1,
+      .pSetLayouts = &descriptor_set_layout_,
+      .pushConstantRangeCount = static_cast<uint32_t>(push_constant_ranges.size()),
+      .pPushConstantRanges = push_constant_ranges.empty() ? nullptr : push_constant_ranges.data()};
+
+  pipeline_layout_ = device_ref_.createPipelineLayout(pipeline_layout_create_info);
+
+  pipeline_cache_ = device_ref_.createPipelineCache(vk::PipelineCacheCreateInfo{});
+
+  // Pipeline
+  const vk::PipelineShaderStageCreateInfo shader_stage_create_info{
+      .stage = vk::ShaderStageFlagBits::eCompute,
+      .module = shader_module_,
+      .pName = "main",
+  };
+
+  const vk::ComputePipelineCreateInfo pipeline_create_info{
+      .stage = shader_stage_create_info,
+      .layout = pipeline_layout_,
+      .basePipelineHandle = nullptr,
+  };
+
+  pipeline_ = device_ref_.createComputePipeline(pipeline_cache_, pipeline_create_info).value;
+
+  spdlog::debug("Pipeline [{}] created successfully", shader_name_);
+}
 
 }  // namespace vulkan
