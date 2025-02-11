@@ -7,25 +7,32 @@ namespace vulkan {
 
 class Algorithm final : public std::enable_shared_from_this<Algorithm> {
  public:
-  explicit Algorithm(VulkanMemoryResource* mr_ptr, const std::string_view shader_name);
+  explicit Algorithm(VulkanMemoryResource* mr_ptr, std::string shader_name);
 
-  ~Algorithm();
+  ~Algorithm() = default;
 
   // Usage:
 
   [[nodiscard]] std::shared_ptr<Algorithm> num_buffers(size_t n);
+  [[nodiscard]] std::shared_ptr<Algorithm> push_constant_size(size_t size_in_bytes);
+
+  template <typename T>
+  [[nodiscard]] std::shared_ptr<Algorithm> push_constant() {
+    return push_constant_size(sizeof(T));
+  }
+
   [[nodiscard]] std::shared_ptr<Algorithm> build();
 
  private:
-  void load_compiled_shader(const std::string& shader_name);
+  void load_compiled_shader();
 
   void create_shader_module();
   void create_descriptor_set_layout();
   void create_descriptor_pool();
-  void create_pipeline();
-
   void allocate_descriptor_sets();
   void allocate_push_constants();
+
+  void create_pipeline();
 
   // References
   vk::Device device_ref_;
@@ -42,10 +49,14 @@ class Algorithm final : public std::enable_shared_from_this<Algorithm> {
 
   std::string shader_name_;
 
+  // Payloads
+  // Buffers and Push Constants
+  std::unique_ptr<std::byte[]> push_constants_ptr_ = nullptr;
+
   struct {
-    std::vector<uint32_t> spirv_binary_;
-    size_t num_buffers_ = 0;
-    
+    std::vector<uint32_t> spirv_binary;
+    size_t num_buffers = 0;
+    size_t push_constant_size = 0;
 
     // uint32_t reflected_workgroup_size_[3] = {0, 0, 0};
     // uint32_t reflected_push_constant_reported_size_ = 0;

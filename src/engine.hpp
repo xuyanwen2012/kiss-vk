@@ -8,16 +8,16 @@ namespace vulkan {
 
 class Engine final : public BaseEngine {
  public:
-  explicit Engine() : BaseEngine(true), mr_ptr(std::make_unique<VulkanMemoryResource>(device_)) {}
+  explicit Engine() : BaseEngine(true), mr_ptr_(std::make_unique<VulkanMemoryResource>(device_)) {}
 
-  [[nodiscard]] VulkanMemoryResource *get_mr() { return mr_ptr.get(); }
+  [[nodiscard]] VulkanMemoryResource *get_mr() const { return mr_ptr_.get(); }
 
-  std::shared_ptr<Algorithm> make_algo(const std::string_view shader_name) {
-    return std::make_shared<Algorithm>(mr_ptr.get(), shader_name);
+  [[nodiscard]] std::shared_ptr<Algorithm> make_algo(const std::string& shader_name) const {
+    return std::make_shared<Algorithm>(mr_ptr_.get(), shader_name);
   }
 
  private:
-  std::unique_ptr<VulkanMemoryResource> mr_ptr;
+  std::unique_ptr<VulkanMemoryResource> mr_ptr_;
 };
 
 }  // namespace vulkan

@@ -3,52 +3,60 @@
 #include "shaders/all_shaders.hpp"
 
 namespace vulkan {
-
-Algorithm::Algorithm(VulkanMemoryResource* mr_ptr, const std::string_view shader_name)
-    : mr_ptr_(mr_ptr), shader_name_(shader_name) {
-  load_compiled_shader(shader_name_);
+Algorithm::Algorithm(VulkanMemoryResource* mr_ptr, std::string shader_name)
+    : device_ref_(mr_ptr->get_device()), mr_ptr_(mr_ptr), shader_name_(std::move(shader_name)) {
+  load_compiled_shader();
   create_shader_module();
 }
 
-Algorithm::~Algorithm() {}
-
 std::shared_ptr<Algorithm> Algorithm::num_buffers(const size_t n) {
-  internal_.num_buffers_ = n;
+  internal_.num_buffers = n;
   create_descriptor_set_layout();
   create_descriptor_pool();
   allocate_descriptor_sets();
   return shared_from_this();
 }
 
-std::shared_ptr<Algorithm> Algorithm::build() { return shared_from_this(); }
+std::shared_ptr<Algorithm> Algorithm::push_constant_size(const size_t size_in_bytes) {
+  internal_.push_constant_size = size_in_bytes;
+  allocate_push_constants();
+  return shared_from_this();
+}
 
-// -------------------------------------------------------------------------------------------------
-//
-// -------------------------------------------------------------------------------------------------
-
-void Algorithm::load_compiled_shader(const std::string& shader_name) {
-  std::pair<const unsigned char*, size_t> shader_pair = shaders::all_shaders.at(shader_name);
-
-  internal_.spirv_binary_.resize(shader_pair.second / sizeof(uint32_t));
-  std::memcpy(internal_.spirv_binary_.data(), shader_pair.first, shader_pair.second);
+std::shared_ptr<Algorithm> Algorithm::build() {
+  create_pipeline();
+  return shared_from_this();
 }
 
 // -------------------------------------------------------------------------------------------------
-// Create shader module
+// Shader Related
+//   load_compiled_shader();
+//   create_shader_module();
 // -------------------------------------------------------------------------------------------------
+
+void Algorithm::load_compiled_shader() {
+  if (!shaders::all_shaders.contains(shader_name_)) {
+    throw std::runtime_error("Shader " + shader_name_ + " not found");
+  }
+
+  const auto [shader_binary, shader_binary_size] = shaders::all_shaders.at(shader_name_);
+
+  internal_.spirv_binary.resize(shader_binary_size / sizeof(uint32_t));
+  std::memcpy(internal_.spirv_binary.data(), shader_binary, shader_binary_size);
+}
 
 void Algorithm::create_shader_module() {
   if (shader_name_.empty()) {
     throw std::runtime_error("Shader name is empty");
   }
 
-  if (internal_.spirv_binary_.empty()) {
+  if (internal_.spirv_binary.empty()) {
     throw std::runtime_error("SPIRV binary is empty");
   }
 
   const vk::ShaderModuleCreateInfo create_info{
-      .codeSize = internal_.spirv_binary_.size() * sizeof(uint32_t),
-      .pCode = internal_.spirv_binary_.data(),
+      .codeSize = internal_.spirv_binary.size() * sizeof(uint32_t),
+      .pCode = internal_.spirv_binary.data(),
   };
 
   shader_module_ = device_ref_.createShaderModule(create_info);
@@ -64,16 +72,16 @@ void Algorithm::create_shader_module() {
 // ----------------------------------------------------------------------------
 
 void Algorithm::create_descriptor_set_layout() {
-  spdlog::trace("Algorithm::create_descriptor_set_layout() num_buffers: {}", internal_.num_buffers_);
+  spdlog::trace("Algorithm::create_descriptor_set_layout() num_buffers: {}", internal_.num_buffers);
 
-  if (internal_.num_buffers_ == 0) {
+  if (internal_.num_buffers == 0) {
     throw std::runtime_error("Number of buffers is 0");
   }
 
   std::vector<vk::DescriptorSetLayoutBinding> bindings;
-  bindings.reserve(internal_.num_buffers_);
+  bindings.reserve(internal_.num_buffers);
 
-  for (uint32_t i = 0; i < internal_.num_buffers_; ++i) {
+  for (uint32_t i = 0; i < internal_.num_buffers; ++i) {
     bindings.emplace_back(vk::DescriptorSetLayoutBinding{
         .binding = i,
         .descriptorType = vk::DescriptorType::eStorageBuffer,
@@ -91,12 +99,10 @@ void Algorithm::create_descriptor_set_layout() {
 }
 
 void Algorithm::create_descriptor_pool() {
-  spdlog::trace("Algorithm create_descriptor_pool");
-
   const std::vector pool_sizes{
       vk::DescriptorPoolSize{
           .type = vk::DescriptorType::eStorageBuffer,
-          .descriptorCount = static_cast<uint32_t>(internal_.num_buffers_),
+          .descriptorCount = static_cast<uint32_t>(internal_.num_buffers),
       },
   };
 
@@ -110,8 +116,6 @@ void Algorithm::create_descriptor_pool() {
 }
 
 void Algorithm::allocate_descriptor_sets() {
-  spdlog::trace("Algorithm allocate_descriptor_sets");
-
   if (descriptor_pool_ == nullptr || descriptor_set_layout_ == nullptr) {
     throw std::runtime_error("Descriptor pool or set layout is not initialized");
   }
@@ -124,5 +128,27 @@ void Algorithm::allocate_descriptor_sets() {
 
   descriptor_set_ = device_ref_.allocateDescriptorSets(allocate_info).front();
 }
+
+// ----------------------------------------------------------------------------
+// Push Constant Related
+//   allocate_push_constants();
+// ----------------------------------------------------------------------------
+
+void Algorithm::allocate_push_constants() {
+  spdlog::trace("Algorithm::allocate_push_constants(), push_constant_size {}", internal_.push_constant_size);
+
+  if (internal_.push_constant_size == 0) {
+    throw std::runtime_error("Push constant size is 0");
+  }
+
+  push_constants_ptr_ = std::make_unique<std::byte[]>(internal_.push_constant_size);
+}
+
+// ----------------------------------------------------------------------------
+// Pipeline Related
+//   create_pipeline();
+// ----------------------------------------------------------------------------
+
+void Algorithm::create_pipeline() { spdlog::trace("Algorithm::create_pipeline()"); }
 
 }  // namespace vulkan
