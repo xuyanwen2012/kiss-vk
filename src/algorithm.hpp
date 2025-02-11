@@ -5,6 +5,19 @@
 
 namespace vulkan {
 
+/**
+ * @brief Calculate the ceiling of a division
+ * @param a Dividend
+ * @param b Divisor
+ * @return Ceiling of a divided by b
+ *
+ * Example usage:
+ * ```cpp
+ * constexpr auto grid_size = div_ceil(n, 256);
+ * ```
+ */
+constexpr auto div_ceil(size_t a, size_t b) { return (a + b - 1) / b; }
+
 class Algorithm final : public std::enable_shared_from_this<Algorithm> {
  public:
   explicit Algorithm(VulkanMemoryResource* mr_ptr, std::string shader_name);

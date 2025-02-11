@@ -57,7 +57,7 @@ void Sequence::cmd_end() const {
   handle_.end();
 }
 
-void Sequence::launch_kernel_async() {
+void Sequence::launch_kernel_async() const {
   spdlog::trace("Sequence::launch_kernel_async()");
 
   vk::SubmitInfo submit_info{

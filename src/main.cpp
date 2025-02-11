@@ -34,7 +34,7 @@ int main() {
   });
 
   auto seq = engine.make_seq();
-  seq->record_commands(algo.get(), {n / 256, 1, 1});
+  seq->record_commands(algo.get(), {vulkan::div_ceil(n, 256), 1, 1});
   seq->launch_kernel_async();
   seq->sync();
 
