@@ -19,10 +19,20 @@ int main(int argc, char** argv) {
 
   struct Ps {
     uint32_t n;
-  };
+  } ps;
 
   auto algo =
-      engine.make_algo("hello_vector_add")->work_group_size(256, 1, 1)->num_buffers(4)->push_constant<Ps>()->build();
+      engine.make_algo("hello_vector_add")->work_group_size(256, 1, 1)->num_buffers(3)->push_constant<Ps>()->build();
+
+  algo->update_push_constant(Ps{
+      .n = n,
+  });
+
+  algo->update_buffer({
+      engine.get_buffer_info(input_a),
+      engine.get_buffer_info(input_b),
+      engine.get_buffer_info(output),
+  });
 
   spdlog::info("done!");
   return 0;

@@ -28,8 +28,7 @@ vk::Buffer VulkanMemoryResource::get_buffer_from_pointer(void *p) {
   std::lock_guard lock(mutex_);
   const auto it = allocations_.find(p);
   if (it == allocations_.end()) {
-    // Handle unknown pointer; possibly throw an exception or return a null
-    // handle
+    // Handle unknown pointer; possibly throw an exception or return a null handle
     throw std::runtime_error("Unknown pointer in get_buffer_from_pointer");
   }
   // Construct a vk::Buffer handle from the stored VkBuffer

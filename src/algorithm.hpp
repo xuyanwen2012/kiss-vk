@@ -11,18 +11,52 @@ class Algorithm final : public std::enable_shared_from_this<Algorithm> {
 
   ~Algorithm() = default;
 
-  // Usage:
-
+  // Builder pattern
   [[nodiscard]] std::shared_ptr<Algorithm> work_group_size(uint32_t x, uint32_t y, uint32_t z);
   [[nodiscard]] std::shared_ptr<Algorithm> num_buffers(size_t n);
   [[nodiscard]] std::shared_ptr<Algorithm> push_constant_size(size_t size_in_bytes);
-
   template <typename T>
   [[nodiscard]] std::shared_ptr<Algorithm> push_constant() {
     return push_constant_size(sizeof(T));
   }
-
   [[nodiscard]] std::shared_ptr<Algorithm> build();
+
+  // Pass actual data
+  void update_push_constant(const void* data_ptr, size_t size_in_bytes);
+
+  /**
+   * @brief Update push constant data with a templated type
+   * @tparam T Type of push constant data
+   * @param data Push constant data to update
+   *
+   * Example usage:
+   * ```cpp
+   * struct PushConstants {
+   *   uint32_t n;
+   * } pc;
+   *
+   * algo->update_push_constant(pc);
+   * ```
+   */
+  template <typename T>
+  void update_push_constant(const T& data) {
+    update_push_constant(&data, sizeof(T));
+  }
+
+  /**
+   * @brief Update buffer bindings for the compute shader
+   * @param buffer_infos List of buffer descriptors to bind
+   *
+   * Example usage:
+   * ```cpp
+   * algo->update_buffer({
+   *   engine.get_buffer_info(input_a),
+   *   engine.get_buffer_info(input_b),
+   *   engine.get_buffer_info(output)
+   * });
+   * ```
+   */
+  void update_buffer(std::initializer_list<vk::DescriptorBufferInfo> buffer_infos);
 
   [[nodiscard]] bool has_push_constants() const { return internal_.push_constant_size > 0; }
 
@@ -33,7 +67,7 @@ class Algorithm final : public std::enable_shared_from_this<Algorithm> {
   void create_descriptor_set_layout();
   void create_descriptor_pool();
   void allocate_descriptor_sets();
-  void allocate_push_constants();
+  // void allocate_push_constants();
 
   void create_pipeline();
 
@@ -53,7 +87,8 @@ class Algorithm final : public std::enable_shared_from_this<Algorithm> {
   std::string shader_name_;
 
   // Payloads (buffers and push constants)
-  std::unique_ptr<std::byte[]> push_constants_ptr_ = nullptr;
+  std::array<std::byte, 128> push_constants_buffer_;
+  std::vector<vk::DescriptorBufferInfo> buffer_infos_;
 
   struct {
     std::vector<uint32_t> spirv_binary;

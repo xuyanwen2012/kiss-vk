@@ -26,8 +26,51 @@ std::shared_ptr<Algorithm> Algorithm::num_buffers(const size_t n) {
 
 std::shared_ptr<Algorithm> Algorithm::push_constant_size(const size_t size_in_bytes) {
   internal_.push_constant_size = size_in_bytes;
-  allocate_push_constants();
   return shared_from_this();
+}
+
+void Algorithm::update_push_constant(const void* data_ptr, size_t size_in_bytes) {
+  if (!has_push_constants()) {
+    throw std::runtime_error("Algorithm has no push constants allocated");
+  }
+
+  if (size_in_bytes != internal_.push_constant_size) {
+    throw std::runtime_error("Push constant size mismatch");
+  }
+
+  std::memcpy(push_constants_buffer_.data(), data_ptr, size_in_bytes);
+}
+
+void Algorithm::update_buffer(std::initializer_list<vk::DescriptorBufferInfo> buffer_infos) {
+  spdlog::trace("Algorithm::update_buffer()");
+
+  if (buffer_infos.size() != internal_.num_buffers) {
+    throw std::runtime_error("Buffer info size mismatch");
+  }
+
+  // need to have descriptor set before updating buffer
+  if (descriptor_set_ == nullptr) {
+    throw std::runtime_error("Descriptor set is not initialized");
+  }
+
+  buffer_infos_ = buffer_infos;
+
+  std::vector<vk::WriteDescriptorSet> compute_write_descriptor_sets;
+  compute_write_descriptor_sets.reserve(buffer_infos.size());
+
+  for (uint32_t i = 0; i < buffer_infos.size(); ++i) {
+    compute_write_descriptor_sets.emplace_back(vk::WriteDescriptorSet{
+        .dstSet = descriptor_set_,
+        .dstBinding = i,
+        .dstArrayElement = 0,
+        .descriptorCount = 1,
+        .descriptorType = vk::DescriptorType::eStorageBuffer,
+        .pBufferInfo = &*(buffer_infos.begin() + i),
+    });
+  }
+
+  device_ref_.updateDescriptorSets(
+      static_cast<uint32_t>(compute_write_descriptor_sets.size()), compute_write_descriptor_sets.data(), 0, nullptr);
 }
 
 std::shared_ptr<Algorithm> Algorithm::build() {
@@ -141,15 +184,15 @@ void Algorithm::allocate_descriptor_sets() {
 //   allocate_push_constants();
 // ----------------------------------------------------------------------------
 
-void Algorithm::allocate_push_constants() {
-  spdlog::trace("Algorithm::allocate_push_constants(), push_constant_size {}", internal_.push_constant_size);
+// void Algorithm::allocate_push_constants() {
+//   spdlog::trace("Algorithm::allocate_push_constants(), push_constant_size {}", internal_.push_constant_size);
 
-  if (internal_.push_constant_size == 0) {
-    throw std::runtime_error("Push constant size is 0");
-  }
+//   if (internal_.push_constant_size == 0) {
+//     throw std::runtime_error("Push constant size is 0");
+//   }
 
-  push_constants_ptr_ = std::make_unique<std::byte[]>(internal_.push_constant_size);
-}
+//   // push_constants_ptr_ = std::make_unique<std::byte[]>(internal_.push_constant_size);
+// }
 
 // ----------------------------------------------------------------------------
 // Pipeline Related
@@ -162,6 +205,8 @@ void Algorithm::create_pipeline() {
   if (descriptor_set_layout_ == nullptr) {
     throw std::runtime_error("Descriptor set layout is not initialized");
   }
+
+  assert(internal_.push_constant_size <= push_constants_buffer_.size());
 
   // Push Constants
   std::vector<vk::PushConstantRange> push_constant_ranges;
