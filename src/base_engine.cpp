@@ -2,6 +2,8 @@
 
 #include <spdlog/spdlog.h>
 
+#include <limits>
+
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
@@ -20,7 +22,8 @@ namespace vulkan {
 // Constructor
 // ----------------------------------------------------------------------------
 
-BaseEngine::BaseEngine(const bool enable_validation_layer) {
+BaseEngine::BaseEngine(const bool enable_validation_layer)
+    : compute_queue_family_index_(std::numeric_limits<uint32_t>::max()) {
   initialize_dynamic_loader();
 
   if (enable_validation_layer) {
@@ -45,15 +48,14 @@ BaseEngine::~BaseEngine() {
 }
 
 // ----------------------------------------------------------------------------
-// Dynamic loader
+// Initialize dynamic loader
 // ----------------------------------------------------------------------------
 
 void BaseEngine::initialize_dynamic_loader() {
   dl_ = vk::DynamicLoader();
 
   // Load the Vulkan library
-  vkGetInstanceProcAddr_ =
-      dl_.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+  vkGetInstanceProcAddr_ = dl_.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
   if (!vkGetInstanceProcAddr_) {
     throw std::runtime_error("Failed to load vkGetInstanceProcAddr!");
   }
@@ -95,10 +97,9 @@ void BaseEngine::request_validation_layer() {
   constexpr auto validationLayerName = "VK_LAYER_KHRONOS_validation";
 
   const auto availableLayers = vk::enumerateInstanceLayerProperties();
-  bool layerFound = std::ranges::any_of(
-      availableLayers, [validationLayerName](const auto &layer) {
-        return std::strcmp(layer.layerName.data(), validationLayerName) == 0;
-      });
+  bool layerFound = std::ranges::any_of(availableLayers, [validationLayerName](const auto &layer) {
+    return std::strcmp(layer.layerName.data(), validationLayerName) == 0;
+  });
 
   if (!layerFound) {
     spdlog::warn(
@@ -126,10 +127,8 @@ void BaseEngine::create_physical_device(vk::PhysicalDeviceType type) {
   }
 
   // Try to find an integrated GPU
-  const auto integrated_gpu =
-      std::ranges::find_if(physicalDevices, [type](const auto &device) {
-        return device.getProperties().deviceType == type;
-      });
+  const auto integrated_gpu = std::ranges::find_if(
+      physicalDevices, [type](const auto &device) { return device.getProperties().deviceType == type; });
 
   if (integrated_gpu == physicalDevices.end()) {
     throw std::runtime_error("No integrated GPU found");
@@ -137,16 +136,15 @@ void BaseEngine::create_physical_device(vk::PhysicalDeviceType type) {
 
   physical_device_ = *integrated_gpu;
 
-  spdlog::info("Using integrated GPU: {}",
-               physical_device_.getProperties().deviceName.data());
+  spdlog::info("Using integrated GPU: {}", physical_device_.getProperties().deviceName.data());
 }
 
 // ----------------------------------------------------------------------------
 // Device
 // ----------------------------------------------------------------------------
 
-[[nodiscard]] static vk::PhysicalDeviceVulkan12Features
-check_vulkan_12_features(const vk::PhysicalDevice &physical_device) {
+[[nodiscard]] static vk::PhysicalDeviceVulkan12Features check_vulkan_12_features(
+    const vk::PhysicalDevice &physical_device) {
   // we want to query and check if uniformAndStorageBuffer8BitAccess is
   // supported before we can create this feature struct
 
@@ -192,16 +190,13 @@ void BaseEngine::create_device(vk::QueueFlags queue_flags) {
     throw std::runtime_error("Physical device is not valid");
   }
 
-  const auto queueFamilyProperties =
-      physical_device_.getQueueFamilyProperties();
+  const auto queueFamilyProperties = physical_device_.getQueueFamilyProperties();
 
-  compute_queue_family_index_ =
-      std::distance(queueFamilyProperties.begin(),
-                    std::find_if(queueFamilyProperties.begin(),
-                                 queueFamilyProperties.end(),
-                                 [queue_flags](const auto &qfp) {
-                                   return qfp.queueFlags & queue_flags;
-                                 }));
+  compute_queue_family_index_ = std::distance(
+      queueFamilyProperties.begin(),
+      std::find_if(queueFamilyProperties.begin(), queueFamilyProperties.end(), [queue_flags](const auto &qfp) {
+        return qfp.queueFlags & queue_flags;
+      }));
 
   if (compute_queue_family_index_ == queueFamilyProperties.size()) {
     throw std::runtime_error("No queue family supports compute operations.");
@@ -237,34 +232,30 @@ void BaseEngine::initialize_vma_allocator() const {
   SPDLOG_TRACE("BaseEngine::initialize_vma_allocator");
 
   if (!physical_device_ || !device_ || !instance_) {
-    throw std::runtime_error(
-        "Physical device, device, or instance is not valid");
+    throw std::runtime_error("Physical device, device, or instance is not valid");
   }
 
   // some how disable -Wmissing-field-initializers warning
 
   const VmaVulkanFunctions vulkan_functions{
-      .vkGetInstanceProcAddr =
-          VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr,
+      .vkGetInstanceProcAddr = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr,
       .vkGetDeviceProcAddr = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetDeviceProcAddr,
   };
 
-  const VmaAllocatorCreateInfo vma_allocator_create_info{
-      .flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
-      .physicalDevice = physical_device_,
-      .device = device_,
-      .preferredLargeHeapBlockSize = 0,  // Let VMA use default size
-      .pAllocationCallbacks = nullptr,
-      .pDeviceMemoryCallbacks = nullptr,
-      .pHeapSizeLimit = nullptr,
-      .pVulkanFunctions = &vulkan_functions,
-      // .pVulkanFunctions = nullptr,
-      .instance = instance_,
-      .vulkanApiVersion = VK_API_VERSION_1_3,
-      .pTypeExternalMemoryHandleTypes = nullptr};
+  const VmaAllocatorCreateInfo vma_allocator_create_info{.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
+                                                         .physicalDevice = physical_device_,
+                                                         .device = device_,
+                                                         .preferredLargeHeapBlockSize = 0,  // Let VMA use default size
+                                                         .pAllocationCallbacks = nullptr,
+                                                         .pDeviceMemoryCallbacks = nullptr,
+                                                         .pHeapSizeLimit = nullptr,
+                                                         .pVulkanFunctions = &vulkan_functions,
+                                                         // .pVulkanFunctions = nullptr,
+                                                         .instance = instance_,
+                                                         .vulkanApiVersion = VK_API_VERSION_1_3,
+                                                         .pTypeExternalMemoryHandleTypes = nullptr};
 
-  if (vmaCreateAllocator(&vma_allocator_create_info, &g_vma_allocator) !=
-      VK_SUCCESS) {
+  if (vmaCreateAllocator(&vma_allocator_create_info, &g_vma_allocator) != VK_SUCCESS) {
     throw std::runtime_error("Failed to create VMA allocator");
   }
 }
