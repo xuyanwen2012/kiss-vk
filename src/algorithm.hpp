@@ -10,8 +10,8 @@ class Algorithm final : public std::enable_shared_from_this<Algorithm> {
   explicit Algorithm(VulkanMemoryResource* mr_ptr, const std::string_view shader_name);
 
   ~Algorithm();
-  
-  // Usage: 
+
+  // Usage:
   [[nodiscard]] std::shared_ptr<Algorithm> build();
 
  private:
@@ -40,7 +40,13 @@ class Algorithm final : public std::enable_shared_from_this<Algorithm> {
 
   std::string shader_name_;
 
-  // Payloads
+  struct {
+    std::vector<uint32_t> spirv_binary_;
+
+    // uint32_t reflected_workgroup_size_[3] = {0, 0, 0};
+    // uint32_t reflected_push_constant_reported_size_ = 0;
+    // uint32_t reflected_push_constant_accumulated_size_ = 0;
+  } internal_;
 };
 
 }  // namespace vulkan
