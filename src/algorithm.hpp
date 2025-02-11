@@ -51,18 +51,14 @@ class Algorithm final : public std::enable_shared_from_this<Algorithm> {
 
   std::string shader_name_;
 
-  // Payloads
-  // Buffers and Push Constants
+  // Payloads (buffers and push constants)
   std::unique_ptr<std::byte[]> push_constants_ptr_ = nullptr;
 
   struct {
     std::vector<uint32_t> spirv_binary;
     size_t num_buffers = 0;
     size_t push_constant_size = 0;
-
-    // uint32_t reflected_workgroup_size_[3] = {0, 0, 0};
-    // uint32_t reflected_push_constant_reported_size_ = 0;
-    // uint32_t reflected_push_constant_accumulated_size_ = 0;
+    uint32_t work_group_size[3] = {0, 0, 0};
   } internal_;
 };
 

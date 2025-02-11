@@ -6,7 +6,7 @@
 int main(int argc, char** argv) {
   spdlog::set_level(spdlog::level::trace);
 
-  vulkan::Engine engine;
+  const vulkan::Engine engine;
   auto mr = engine.get_mr();
 
   struct Ps {
