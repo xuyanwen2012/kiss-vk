@@ -237,13 +237,17 @@ void BaseEngine::initialize_vma_allocator() const {
   }
 
   // some how disable -Wmissing-field-initializers warning
+#if defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#endif
   const VmaVulkanFunctions vulkan_functions{
       .vkGetInstanceProcAddr = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr,
       .vkGetDeviceProcAddr = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetDeviceProcAddr,
   };
+#if defined(__GNUC__)
 #pragma GCC diagnostic pop
+#endif
 
   const VmaAllocatorCreateInfo vma_allocator_create_info{
       .flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
