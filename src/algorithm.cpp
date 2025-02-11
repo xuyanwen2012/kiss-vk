@@ -9,6 +9,13 @@ Algorithm::Algorithm(VulkanMemoryResource* mr_ptr, std::string shader_name)
   create_shader_module();
 }
 
+std::shared_ptr<Algorithm> Algorithm::work_group_size(const uint32_t x, const uint32_t y, const uint32_t z) {
+  internal_.work_group_size[0] = x;
+  internal_.work_group_size[1] = y;
+  internal_.work_group_size[2] = z;
+  return shared_from_this();
+}
+
 std::shared_ptr<Algorithm> Algorithm::num_buffers(const size_t n) {
   internal_.num_buffers = n;
   create_descriptor_set_layout();

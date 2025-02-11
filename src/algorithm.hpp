@@ -13,6 +13,7 @@ class Algorithm final : public std::enable_shared_from_this<Algorithm> {
 
   // Usage:
 
+  [[nodiscard]] std::shared_ptr<Algorithm> work_group_size(uint32_t x, uint32_t y, uint32_t z);
   [[nodiscard]] std::shared_ptr<Algorithm> num_buffers(size_t n);
   [[nodiscard]] std::shared_ptr<Algorithm> push_constant_size(size_t size_in_bytes);
 
