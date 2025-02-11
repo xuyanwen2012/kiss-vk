@@ -76,14 +76,14 @@ void BaseEngine::create_instance() {
       .apiVersion = VK_API_VERSION_1_3,
   };
 
-  const vk::InstanceCreateInfo instanceCreateInfo{
+  const vk::InstanceCreateInfo instance_create_info{
       .pApplicationInfo = &appInfo,
       .enabledLayerCount = static_cast<uint32_t>(enabled_layers_.size()),
       .ppEnabledLayerNames = enabled_layers_.data(),
   };
 
   // Create the instance using the default dispatcher
-  instance_ = vk::createInstance(instanceCreateInfo);
+  instance_ = createInstance(instance_create_info);
 
   // Initialize instance-specific function pointers
   VULKAN_HPP_DEFAULT_DISPATCHER.init(instance_);
@@ -190,7 +190,7 @@ void BaseEngine::create_device(vk::QueueFlags queue_flags) {
     throw std::runtime_error("Physical device is not valid");
   }
 
-  const auto queueFamilyProperties = physical_device_.getQueueFamilyProperties();
+  auto queueFamilyProperties = physical_device_.getQueueFamilyProperties();
 
   compute_queue_family_index_ = std::distance(
       queueFamilyProperties.begin(),

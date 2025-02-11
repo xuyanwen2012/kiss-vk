@@ -29,7 +29,7 @@ std::shared_ptr<Algorithm> Algorithm::push_constant_size(const size_t size_in_by
   return shared_from_this();
 }
 
-void Algorithm::update_push_constant(const void* data_ptr, size_t size_in_bytes) {
+void Algorithm::update_push_constant(const void* data_ptr, const size_t size_in_bytes) {
   if (!has_push_constants()) {
     throw std::runtime_error("Algorithm has no push constants allocated");
   }
@@ -41,7 +41,7 @@ void Algorithm::update_push_constant(const void* data_ptr, size_t size_in_bytes)
   std::memcpy(push_constants_buffer_.data(), data_ptr, size_in_bytes);
 }
 
-void Algorithm::update_buffer(std::initializer_list<vk::DescriptorBufferInfo> buffer_infos) {
+void Algorithm::update_buffer(const std::initializer_list<vk::DescriptorBufferInfo> buffer_infos) {
   spdlog::trace("Algorithm::update_buffer()");
 
   if (buffer_infos.size() != internal_.num_buffers) {
@@ -65,7 +65,7 @@ void Algorithm::update_buffer(std::initializer_list<vk::DescriptorBufferInfo> bu
         .dstArrayElement = 0,
         .descriptorCount = 1,
         .descriptorType = vk::DescriptorType::eStorageBuffer,
-        .pBufferInfo = &*(buffer_infos.begin() + i),
+        .pBufferInfo = (buffer_infos.begin() + i),
     });
   }
 
@@ -101,11 +101,11 @@ void Algorithm::record_bind_push(const vk::CommandBuffer& cmd_buf) const {
   cmd_buf.pushConstants(pipeline_layout_,
                         vk::ShaderStageFlagBits::eCompute,
                         0,
-                        internal_.push_constant_size,
+                        static_cast<uint32_t>(internal_.push_constant_size),
                         push_constants_buffer_.data());
 }
 
-void Algorithm::record_dispatch(const vk::CommandBuffer& cmd_buf, std::array<uint32_t, 3> grid_size) const {
+void Algorithm::record_dispatch(const vk::CommandBuffer& cmd_buf, const std::array<uint32_t, 3> grid_size) const {
   spdlog::trace("Algorithm::record_dispatch()");
 
   spdlog::debug("Dispatching ({}, {}, {}) blocks of size ({}, {}, {})",
@@ -219,21 +219,6 @@ void Algorithm::allocate_descriptor_sets() {
 
   descriptor_set_ = device_ref_.allocateDescriptorSets(allocate_info).front();
 }
-
-// ----------------------------------------------------------------------------
-// Push Constant Related
-//   allocate_push_constants();
-// ----------------------------------------------------------------------------
-
-// void Algorithm::allocate_push_constants() {
-//   spdlog::trace("Algorithm::allocate_push_constants(), push_constant_size {}", internal_.push_constant_size);
-
-//   if (internal_.push_constant_size == 0) {
-//     throw std::runtime_error("Push constant size is 0");
-//   }
-
-//   // push_constants_ptr_ = std::make_unique<std::byte[]>(internal_.push_constant_size);
-// }
 
 // ----------------------------------------------------------------------------
 // Pipeline Related
