@@ -253,16 +253,18 @@ void Algorithm::create_descriptor_set_layout() {
 }
 
 void Algorithm::create_descriptor_pool() {
+  const uint32_t total_descriptors = descriptor_set_count_ * internal_.num_buffers;
+
   const std::vector<vk::DescriptorPoolSize> pool_sizes{
       {
           .type = vk::DescriptorType::eStorageBuffer,
-          .descriptorCount = static_cast<uint32_t>(internal_.num_buffers * descriptor_set_count_),
+          .descriptorCount = total_descriptors,
       },
       // ^ we need enough descriptors for each set
   };
 
   const vk::DescriptorPoolCreateInfo create_info{
-      .maxSets = 1,
+      .maxSets = descriptor_set_count_,
       .poolSizeCount = static_cast<uint32_t>(pool_sizes.size()),
       .pPoolSizes = pool_sizes.data(),
   };
